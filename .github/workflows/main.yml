@@ -1,4 +1,4 @@
-name: Website Content Scraper with Crocseek Proxy
+name: Website Content Scraper and GitHub Pages Deployment
 
 on:
   workflow_dispatch:
@@ -7,11 +7,11 @@ on:
         description: 'Target website URL to scrape'
         required: true
       proxy_url:
-        description: 'Optional additional proxy URL (format: http://user:pass@host:port)'
+        description: 'Optional proxy URL (format: http://user:pass@host:port)'
         required: false
 
 jobs:
-  scrape:
+  scrape-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
@@ -37,23 +37,29 @@ jobs:
       
       - name: Run website scraper
         run: |
-          mkdir -p "${{ env.SITE_NAME }}"
+          mkdir -p "docs"
           python3 scraper.py
         env:
           TARGET_URL: ${{ github.event.inputs.target_url }}
-          CROCSEEK_PROXY_BASE: "https://cdn.blockaway.net/_ja/"
-          ADDITIONAL_PROXY_URL: ${{ github.event.inputs.proxy_url }}
-          SITE_FOLDER: ${{ env.SITE_NAME }}
+          PROXY_URL: ${{ github.event.inputs.proxy_url }}
+          SITE_FOLDER: "docs"
       
       - name: List scraped files
         run: |
-          echo "Scraped content saved to ${{ env.SITE_NAME }}/"
-          find "${{ env.SITE_NAME }}" -type f | wc -l
+          echo "Scraped content saved to docs/"
+          find "docs" -type f | wc -l
       
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add "${{ env.SITE_NAME }}/"
-          git commit -m "Add scraped content for ${{ env.SITE_NAME }}" || echo "No changes to commit"
+          git add docs/
+          git commit -m "Add scraped content for ${{ env.SITE_NAME }} to GitHub Pages" || echo "No changes to commit"
           git push
+      
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@4.1.4
+        with:
+          branch: gh-pages
+          folder: docs
+          clean: true
