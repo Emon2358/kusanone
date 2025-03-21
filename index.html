@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>草の根bbs - 高機能P2Pチャット</title>
+  <style>
+    :root {
+      --primary-color: #4a86e8;
+      --secondary-color: #f5f5f5;
+      --success-color: #34a853;
+      --warning-color: #fbbc05;
+      --danger-color: #ea4335;
+      --light-color: #f8f9fa;
+      --dark-color: #343a40;
+    }
+    
+    body {
+      font-family: 'Hiragino Kaku Gothic Pro', 'メイリオ', sans-serif;
+      background: var(--secondary-color);
+      margin: 0;
+      padding: 0;
+      color: var(--dark-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      flex: 1;
+    }
+    
+    header {
+      background: var(--primary-color);
+      color: white;
+      padding: 15px 0;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .connection-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #ccc;
+    }
+    
+    .status-indicator.online {
+      background-color: var(--success-color);
+    }
+    
+    #myId {
+      font-weight: bold;
+      background: var(--light-color);
+      padding: 5px 10px;
+      border-radius: 4px;
+      display: inline-block;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+    }
+    
+    .connection-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .connection-form input {
+      flex: 1;
+    }
+    
+    .chat-container {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      height: 400px;
+    }
+    
+    .online-users {
+      width: 200px;
+      background: white;
+      border-radius: 5px;
+      padding: 10px;
+      overflow-y: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .online-users h3 {
+      margin-top: 0;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .user-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .user-list li {
+      padding: 8px 5px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-bottom: 5px;
+    }
+    
+    .user-list li:hover {
+      background-color: var(--light-color);
+    }
+    
+    .user-list li.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    #chat {
+      flex: 1;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 5px;
+      overflow-y: auto;
+      padding: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .message {
+      padding: 8px 12px;
+      margin: 8px 0;
+      border-radius: 18px;
+      max-width: 70%;
+      word-break: break-word;
+      position: relative;
+    }
+    
+    .message .time {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-top: 3px;
+    }
+    
+    .you {
+      background: #e3f2fd;
+      margin-left: auto;
+      border-bottom-right-radius: 5px;
+    }
+    
+    .peer {
+      background: #f1f1f1;
+      margin-right: auto;
+      border-bottom-left-radius: 5px;
+    }
+    
+    .system {
+      background: #fff3e0;
+      margin: 10px auto;
+      font-size: 14px;
+      text-align: center;
+      max-width: 80%;
+    }
+    
+    .message-form {
+      display: flex;
+      gap: 10px;
+    }
+    
+    input, button, select {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    
+    input:focus, button:focus, select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    
+    button {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    button:hover {
+      background: #3b78e7;
+    }
+    
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .toolbar button {
+      padding: 5px 10px;
+      font-size: 14px;
+    }
+    
+    .emoji-picker {
+      position: absolute;
+      bottom: 60px;
+      right: 20px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 5px;
+      z-index: 100;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    }
+    
+    .emoji-btn {
+      cursor: pointer;
+      font-size: 20px;
+      padding: 5px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .emoji-btn:hover {
+      background: var(--light-color);
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .typing-indicator {
+      font-style: italic;
+      color: #666;
+      font-size: 14px;
+      padding: 5px 15px;
+    }
+    
+    .file-preview {
+      max-width: 200px;
+      max-height: 200px;
+      margin: 5px 0;
+      border-radius: 5px;
+    }
+    
+    footer {
+      text-align: center;
+      padding: 15px;
+      background: var(--dark-color);
+      color: white;
+      font-size: 14px;
+    }
+    
+    /* レスポンシブデザイン */
+    @media (max-width: 768px) {
+      .chat-container {
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .online-users {
+        width: auto;
+        height: 150px;
+      }
+      
+      #chat {
+        height: 350px;
+      }
+      
+      .connection-form {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>草の根bbs - 高機能P2Pチャット</h1>
+  </header>
+  
+  <div class="container">
+    <div class="status-bar">
+      <div class="connection-info">
+        <div>
+          <span class="status-indicator" id="statusIndicator"></span>
+          <span id="statusText">未接続</span>
+        </div>
+        <div>
+          ID: <span id="myId" title="クリックでコピー">取得中...</span>
+        </div>
+      </div>
+      
+      <div>
+        <select id="roomSelect">
+          <option value="public">公開チャット</option>
+          <option value="private">プライベートチャット</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="connection-form">
+      <input type="text" id="peerIdInput" placeholder="相手のPeer IDを入力">
+      <button id="connectBtn">接続</button>
+      <button id="disconnectBtn">切断</button>
+    </div>
+    
+    <div class="toolbar">
+      <button id="clearBtn">履歴消去</button>
+      <button id="saveBtn">チャット保存</button>
+      <input type="color" id="colorPicker" value="#4a86e8" title="自分のメッセージの色">
+    </div>
+    
+    <div class="chat-container">
+      <div class="online-users">
+        <h3>接続中のユーザー</h3>
+        <ul class="user-list" id="userList">
+          <li>まだ接続されていません</li>
+        </ul>
+      </div>
+      
+      <div id="chat">
+        <div class="message system">チャットが開始されました。接続するには相手のIDを入力するか、あなたのIDを共有してください。</div>
+      </div>
+    </div>
+    
+    <div id="typingIndicator" class="typing-indicator hidden"></div>
+    
+    <div class="message-form">
+      <input type="text" id="messageInput" placeholder="メッセージを入力">
+      <button id="emojiBtn" title="絵文字">😊</button>
+      <button id="fileBtn" title="ファイル送信">📎</button>
+      <input type="file" id="fileInput" style="display: none">
+      <button id="sendBtn">送信</button>
+    </div>
+    
+    <div id="emojiPicker" class="emoji-picker hidden"></div>
+  </div>
+  
+  <footer>
+    <p>草の根bbs P2Pチャット v2.0 - WebRTC技術で安全な直接通信</p>
+  </footer>
+  
+  <!-- PeerJS ライブラリ -->
+  <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+  
+  <script>
+    // グローバル変数
+    let peer;
+    let connections = {}; // すべての接続を保存
+    let currentRoom = 'public'; // デフォルトルーム
+    let username = 'ユーザー' + Math.floor(Math.random() * 1000);
+    let isTyping = false;
+    let typingTimeout;
+    const emojis = ['😊','😂','😍','👍','🎉','❤️','😎','🙌','🤔','😢','😡','🥺','👏','🔥','✨','💯','🌟','🤩','👋','🙏'];
+    
+    // 初期化
+    document.addEventListener('DOMContentLoaded', initialize);
+    
+    function initialize() {
+      // ユーザー名を尋ねる
+      const savedUsername = localStorage.getItem('p2p-username');
+      if (savedUsername) {
+        username = savedUsername;
+      } else {
+        const userInput = prompt('チャットでの表示名を入力してください', username);
+        if (userInput && userInput.trim() !== '') {
+          username = userInput.trim();
+          localStorage.setItem('p2p-username', username);
+        }
+      }
+      
+      // PeerJSの設定
+      const peerOptions = {
+        debug: 1,
+        config: {
+          'iceServers': [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
+      };
+      
+      // PeerJSのインスタンスを作成
+      peer = new Peer(null, peerOptions);
+      
+      // 自分のPeer IDを取得
+      peer.on('open', function(id) {
+        document.getElementById('myId').textContent = id;
+        document.getElementById('statusIndicator').classList.add('online');
+        document.getElementById('statusText').textContent = '接続可能';
+        addSystemMessage(`ようこそ！あなたのIDは ${id} です。`);
+      });
+      
+      // 接続エラー
+      peer.on('error', function(err) {
+        console.error('PeerJS error:', err);
+        addSystemMessage(`エラーが発生しました: ${err.type}`);
+        
+        if (err.type === 'peer-unavailable') {
+          addSystemMessage('指定されたIDのユーザーは現在オンラインではありません。');
+        } else if (err.type === 'disconnected') {
+          document.getElementById('statusIndicator').classList.remove('online');
+          document.getElementById('statusText').textContent = '切断されました';
+        }
+      });
+      
+      // 他のピアから接続が来た場合
+      peer.on('connection', handleIncomingConnection);
+      
+      // イベントリスナーの設定
+      setupEventListeners();
+      
+      // 絵文字ピッカーの初期化
+      initEmojiPicker();
+    }
+    
+    function setupEventListeners() {
+      // 接続ボタン
+      document.getElementById('connectBtn').addEventListener('click', connectToPeer);
+      
+      // 切断ボタン
+      document.getElementById('disconnectBtn').addEventListener('click', disconnectAll);
+      
+      // ルーム選択
+      document.getElementById('roomSelect').addEventListener('change', function() {
+        currentRoom = this.value;
+        addSystemMessage(`${currentRoom === 'public' ? '公開' : 'プライベート'}チャットに切り替えました`);
+      });
+      
+      // メッセージ送信
+      document.getElementById('sendBtn').addEventListener('click', sendMessage);
+      document.getElementById('messageInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        } else {
+          sendTypingIndicator();
+        }
+      });
+      
+      // 履歴消去
+      document.getElementById('clearBtn').addEventListener('click', function() {
+        if (confirm('チャット履歴を消去しますか？')) {
+          document.getElementById('chat').innerHTML = '';
+          addSystemMessage('チャット履歴を消去しました');
+        }
+      });
+      
+      // チャット保存
+      document.getElementById('saveBtn').addEventListener('click', saveChat);
+      
+      // 自分のIDをクリックしてコピー
+      document.getElementById('myId').addEventListener('click', function() {
+        navigator.clipboard.writeText(this.textContent)
+          .then(() => {
+            addSystemMessage('IDをクリップボードにコピーしました');
+          })
+          .catch(err => {
+            console.error('コピーに失敗しました:', err);
+          });
+      });
+      
+      // 絵文字ボタン
+      document.getElementById('emojiBtn').addEventListener('click', function() {
+        const picker = document.getElementById('emojiPicker');
+        picker.classList.toggle('hidden');
+      });
+      
+      // ファイル送信ボタン
+      document.getElementById('fileBtn').addEventListener('click', function() {
+        document.getElementById('fileInput').click();
+      });
+      
+      // ファイル選択
+      document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+    }
+    
+    function handleIncomingConnection(conn) {
+      // メタデータを確認
+      conn.on('open', function() {
+        // 接続オブジェクトを保存
+        connections[conn.peer] = conn;
+        
+        // ユーザー情報を送信
+        conn.send({
+          type: 'info',
+          username: username,
+          room: currentRoom
+        });
+        
+        addSystemMessage(`${conn.peer} から接続されました`);
+        updateUserList();
+        
+        // メッセージ受信時
+        conn.on('data', function(data) {
+          handleReceivedData(conn.peer, data);
+        });
+        
+        // 切断時
+        conn.on('close', function() {
+          delete connections[conn.peer];
+          addSystemMessage(`${conn.peer} との接続が切断されました`);
+          updateUserList();
+        });
+      });
+    }
+    
+    function connectToPeer() {
+      const peerId = document.getElementById('peerIdInput').value.trim();
+      if (peerId === '') {
+        alert('相手のPeer IDを入力してください。');
+        return;
+      }
+      
+      if (connections[peerId]) {
+        alert('すでに接続されています。');
+        return;
+      }
+      
+      const conn = peer.connect(peerId, {
+        reliable: true,
+        metadata: {
+          username: username,
+          room: currentRoom
+        }
+      });
+      
+      addSystemMessage(`${peerId} に接続しています...`);
+      
+      conn.on('open', function() {
+        // 接続オブジェクトを保存
+        connections[conn.peer] = conn;
+        
+        // ユーザー情報を送信
+        conn.send({
+          type: 'info',
+          username: username,
+          room: currentRoom
+        });
+        
+        addSystemMessage(`${conn.peer} との接続が確立されました`);
+        updateUserList();
+        
+        // 接続後フォームをクリア
+        document.getElementById('peerIdInput').value = '';
+        
+        // メッセージ受信時
+        conn.on('data', function(data) {
+          handleReceivedData(conn.peer, data);
+        });
+        
+        // 切断時
+        conn.on('close', function() {
+          delete connections[conn.peer];
+          addSystemMessage(`${conn.peer} との接続が切断されました`);
+          updateUserList();
+        });
+      });
+      
+      conn.on('error', function(err) {
+        addSystemMessage(`接続エラー: ${err}`);
+      });
+    }
+    
+    function handleReceivedData(peerId, data) {
+      // データの種類に応じて処理
+      if (typeof data === 'string') {
+        // 単純なテキストメッセージ
+        addMessage('peer', data, peerId);
+      } else if (data.type === 'typing') {
+        // タイピングインジケーター
+        showTypingIndicator(data.username);
+      } else if (data.type === 'info') {
+        // ユーザー情報
+        connections[peerId].username = data.username;
+        updateUserList();
+      } else if (data.type === 'file') {
+        // ファイル受信
+        receiveFile(data, peerId);
+      }
+    }
+    
+    function addMessage(type, message, peerId = null) {
+      const chatDiv = document.getElementById('chat');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message ' + (type === 'you' ? 'you' : 'peer');
+      
+      if (type === 'you') {
+        const color = document.getElementById('colorPicker').value;
+        msgDiv.style.backgroundColor = color;
+        msgDiv.style.color = isLightColor(color) ? '#000' : '#fff';
+      }
+      
+      // 送信者名を表示（相手からのメッセージの場合）
+      if (type === 'peer' && peerId && connections[peerId]) {
+        const peerName = connections[peerId].username || peerId.substring(0, 6);
+        const nameSpan = document.createElement('div');
+        nameSpan.textContent = peerName;
+        nameSpan.style.fontWeight = 'bold';
+        nameSpan.style.fontSize = '12px';
+        nameSpan.style.marginBottom = '3px';
+        msgDiv.appendChild(nameSpan);
+      }
+      
+      // メッセージ本文
+      const messageContent = document.createElement('div');
+      
+      // URLを検出してリンクに変換
+      const messageWithLinks = message.replace(
+        /(https?:\/\/[^\s]+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+      );
+      
+      messageContent.innerHTML = messageWithLinks;
+      msgDiv.appendChild(messageContent);
+      
+      // タイムスタンプ
+      const timeSpan = document.createElement('div');
+      timeSpan.className = 'time';
+      const now = new Date();
+      timeSpan.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      msgDiv.appendChild(timeSpan);
+      
+      chatDiv.appendChild(msgDiv);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+      
+      // タイピングインジケーターを非表示
+      hideTypingIndicator();
+    }
+    
+    function addSystemMessage(message) {
+      const chatDiv = document.getElementById('chat');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message system';
+      msgDiv.textContent = message;
+      
+      chatDiv.appendChild(msgDiv);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+    
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      if (message === '') return;
+      
+      if (Object.keys(connections).length === 0) {
+        addSystemMessage('接続されているピアがありません。');
+        return;
+      }
+      
+      // すべての接続に送信
+      for (const id in connections) {
+        const conn = connections[id];
+        if (conn.open) {
+          conn.send(message);
+        }
+      }
+      
+      // 自分のメッセージを表示
+      addMessage('you', message);
+      input.value = '';
+      
+      // タイピングインジケーターをキャンセル
+      clearTimeout(typingTimeout);
+      isTyping = false;
+    }
+    
+    function disconnectAll() {
+      for (const id in connections) {
+        connections[id].close();
+      }
+      
+      connections = {};
+      addSystemMessage('すべての接続を切断しました');
+      updateUserList();
+    }
+    
+    function updateUserList() {
+      const userList = document.getElementById('userList');
+      userList.innerHTML = '';
+      
+      if (Object.keys(connections).length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'まだ接続されていません';
+        userList.appendChild(li);
+        return;
+      }
+      
+      for (const id in connections) {
+        const li = document.createElement('li');
+        const username = connections[id].username || id.substring(0, 6);
+        li.textContent = username;
+        li.title = id;
+        userList.appendChild(li);
+      }
+    }
+    
+    function initEmojiPicker() {
+      const picker = document.getElementById('emojiPicker');
+      
+      emojis.forEach(emoji => {
+        const btn = document.createElement('div');
+        btn.className = 'emoji-btn';
+        btn.textContent = emoji;
+        btn.addEventListener('click', function() {
+          const input = document.getElementById('messageInput');
+          input.value += emoji;
+          input.focus();
+          picker.classList.add('hidden');
+        });
+        
+        picker.appendChild(btn);
+      });
+      
+      // 絵文字ピッカー以外をクリックしたら閉じる
+      document.addEventListener('click', function(event) {
+        if (!picker.contains(event.target) && event.target.id !== 'emojiBtn') {
+          picker.classList.add('hidden');
+        }
+      });
+    }
+    
+    function sendTypingIndicator() {
+      if (!isTyping) {
+        isTyping = true;
+        
+        // タイピング状態を送信
+        for (const id in connections) {
+          const conn = connections[id];
+          if (conn.open) {
+            conn.send({
+              type: 'typing',
+              username: username
+            });
+          }
+        }
+      }
+      
+      // タイマーをリセット
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(function() {
+        isTyping = false;
+      }, 2000);
+    }
+    
+    function showTypingIndicator(user) {
+      const indicator = document.getElementById('typingIndicator');
+      indicator.textContent = `${user} が入力中...`;
+      indicator.classList.remove('hidden');
+      
+      // 3秒後に非表示
+      setTimeout(function() {
+        indicator.classList.add('hidden');
+      }, 3000);
+    }
+    
+    function hideTypingIndicator() {
+      document.getElementById('typingIndicator').classList.add('hidden');
+    }
+    
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // ファイルサイズチェック (5MB制限)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('ファイルサイズは5MB以下にしてください');
+        event.target.value = '';
+        return;
+      }
+      
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const fileData = {
+          type: 'file',
+          name: file.name,
+          data: e.target.result,
+          mimeType: file.type
+        };
+        
+        // ファイルプレビューを表示（画像の場合）
+        if (file.type.startsWith('image/')) {
+          const input = document.getElementById('messageInput');
+          input.value = `[画像: ${file.name}]`;
+        } else {
+          const input = document.getElementById('messageInput');
+          input.value = `[ファイル: ${file.name}]`;
+        }
+        
+        // すべての接続に送信
+        for (const id in connections) {
+          const conn = connections[id];
+          if (conn.open) {
+            conn.send(fileData);
+          }
+        }
+        
+        // 自分のメッセージとしても表示
+        sendMessage();
+      };
+      
+      reader.readAsDataURL(file);
+      
+      // ファイル選択をリセット
+      event.target.value = '';
+    }
+    
+    function receiveFile(data, peerId) {
+      const chatDiv = document.getElementById('chat');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message peer';
+      
+      // 送信者名
+      if (connections[peerId]) {
+        const peerName = connections[peerId].username || peerId.substring(0, 6);
+        const nameSpan = document.createElement('div');
+        nameSpan.textContent = peerName;
+        nameSpan.style.fontWeight = 'bold';
+        nameSpan.style.fontSize = '12px';
+        nameSpan.style.marginBottom = '3px';
+        msgDiv.appendChild(nameSpan);
+      }
+      
+      // ファイル情報
+      const fileInfo = document.createElement('div');
+      fileInfo.textContent = `ファイル: ${data.name}`;
+      msgDiv.appendChild(fileInfo);
+      
+      // 画像の場合はプレビュー表示
+      if (data.mimeType.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = data.data;
+        img.alt = data.name;
+        img.className = 'file-preview';
+        msgDiv.appendChild(img);
+      }
+      
+      // ダウンロードリンク
+      const link = document.createElement('a');
+      link.href = data.data;
+      link.download = data.name;
+      link.textContent = 'ダウンロード';
+      link.style.display = 'block';
+      link.style.marginTop = '5px';
+      link.style.color = '#4a86e8';
+      msgDiv.appendChild(link);
+      
+      // タイムスタンプ
+      const timeSpan = document.createElement('div');
+      timeSpan.className = 'time';
+      const now = new Date();
+      timeSpan.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      msgDiv.appendChild(timeSpan);
+      
+      chatDiv.appendChild(msgDiv);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+    
+    function saveChat() {
+      const chatContent = document.getElementById('chat').innerHTML;
+      const blob = new Blob([`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>P2Pチャット履歴</title>
+          <style>
+            body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            .message { padding: 8px 12px; margin: 8px 0; border-radius: 18px; }
+            .you { background: #e3f2fd; margin-left: auto; text-align: right; }
+            .peer { background: #f1f1f1; margin-right: auto; }
+            .system { background: #fff3e0; margin: 10px auto; text-align: center; }
+          </style>
+        </head>
+        <body>
